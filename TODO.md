@@ -1,0 +1,31 @@
+make level system:
+  -ball max appear with level small and big count the same so big can explose and go more than max and if kill small just appear new
+  -ball max hp scale with level
+  -maybe ball speed ?
+  -make player progression with level:
+    -ui with level and point ui to make
+    -ui showLife when key pressed 
+    -take point to gain:
+      -bullet damage
+      -bullet speed 
+      -bullet reload
+    -every 5 level gain big point:
+      -other cannon
+      -other direction cannon
+      -possiblity to small temporary bonus:
+        -gain 1 life 
+        -be invulnerable for x seconds
+        -freeze
+
+make better interface:
+  -show danger on bloc spawn corner
+  -prettier bullet
+  -prettier bloc:
+    -cercle in shape octogon 
+    -rotate 
+    -better text  
+    -explosion on kill
+
+score on bloc hp killed
+show score on endscreen
+save highscore in file
