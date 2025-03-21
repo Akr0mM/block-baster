@@ -1,5 +1,7 @@
 make level system:
-  -ball max appear with level small and big count the same so big can explose and go more than max and if kill small just appear new
+  ### -ball max appear with level small and big count the same so big can explose and go more than max and if kill small just appear new
+  - faire des murs hors border pour kill des block qui serait sorti sans faire expres
+  -block kill give xp : more xp on block size or on block hp 
   -ball max hp scale with level
   -maybe ball speed ?
   -make player progression with level:

@@ -12,6 +12,7 @@ class Player {
     this.invulnerable = false;
 
     this.damage = 13;
+    this.bulletSpeed = 6;
 
     this.shootCooldown = 10;
     this.shootTimer = this.shootCooldown;
@@ -21,6 +22,12 @@ class Player {
 
     this.leftFirstCannon = { x: this.x - this.width / 3.5, y: this.y - this.height / 5, width: this.bulletWidth, height: this.bulletHeight }
     this.rightFirstCannon = { x: this.x + this.width / 3.5 - this.bulletWidth, y: this.y - this.height / 5, width: this.bulletWidth, height: this.bulletHeight }
+
+    this.level = 1;
+    this.xpToNextLevel = this.level * 10;
+    this.xp = 0;
+    this.showXp = false;
+    this.showStats = true;
   }
 
   update() {
@@ -37,8 +44,8 @@ class Player {
   }
 
   shoot() {
-    bullets.push(new Bullet(this.leftFirstCannon, this.damage));
-    bullets.push(new Bullet(this.rightFirstCannon, this.damage));
+    bullets.push(new Bullet(this.leftFirstCannon, this.damage, this.bulletSpeed));
+    bullets.push(new Bullet(this.rightFirstCannon, this.damage, this.bulletSpeed));
   }
 
   draw() {
@@ -83,6 +90,101 @@ class Player {
       this.showPlayer = true;
       this.showLifes = false;
       this.invulnerable = false;
+    }
+  }
+
+  newLevel() {
+    this.xp = 0;
+    this.xpToNextLevel += 10;
+    this.level++;
+    this.showStats = true;
+  }
+
+  gainXp(block) {
+    this.xp += 1;
+    if (this.xp == this.xpToNextLevel) {
+      this.newLevel();
+    }
+  }
+
+  drawPlayerUi() {
+    const xpBar = {
+      x: 10,
+      y: ch - 10 - 30,
+      width: cw / 2.5,
+      height: 30,
+    }
+
+    ctx.strokeStyle = "#777777";
+    ctx.strokeRect(xpBar.x, xpBar.y, xpBar.width, xpBar.height);
+    rect(xpBar.x, xpBar.y, this.xp / this.xpToNextLevel * xpBar.width, xpBar.height, "#00bb00");
+
+    const maxTick = 15;
+    const step = Math.ceil(this.xpToNextLevel / maxTick);
+    for (let i = step; i < this.xpToNextLevel; i += step) {
+      rect(xpBar.x + i / this.xpToNextLevel * xpBar.width, xpBar.y, 1, xpBar.height, "#777777");
+    }
+
+    if (this.showXp) {
+      ctx.textAlign = "right";
+      ctx.textBaseline = "top";
+      ctx.font = `${xpBar.height - 8}px Arial`;
+      ctx.fillStyle = "#cccccc";
+      ctx.fillText(`${this.xp} / ${this.xpToNextLevel}`, xpBar.x + xpBar.width - 8, xpBar.y + 6);
+    }
+
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.font = `${xpBar.height - 8}px Arial`;
+    ctx.fillStyle = "#cccccc";
+    ctx.fillText(`Level : ${this.level}`, xpBar.x + xpBar.width + 20, xpBar.y + 6);
+
+    if (this.showStats) this.drawStats();
+  }
+
+  drawStats() {
+    const board = {
+      width: cw / 11,
+      height: ch / 8,
+      x: cw - 10 - cw / 11,
+      y: ch - 10 - ch / 8,
+    }
+
+    ctx.strokeStyle = "#333333";
+    ctx.strokeRect(board.x, board.y, board.width, board.height);
+    rect(board.x, board.y, board.width, board.height, "#44444444");
+
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${board.width / 11}px Arial`;
+    ctx.fillStyle = "#cccccccc";
+
+    ctx.fillText(`Bullet Damage`, board.x + board.width / 2, board.y + 30);
+    ctx.fillText(`Bullet Speed`, board.x + board.width / 2, board.y + (board.height - 60) / 3 + 30);
+    ctx.fillText(`Reload Speed`, board.x + board.width / 2, board.y + (board.height - 60) * 2 / 3 + 30);
+    ctx.fillText(`Body Damage`, board.x + board.width / 2, board.y + board.height - 30);
+
+    ctx.textAlign = "right";
+    ctx.font = `${board.width / 18}px Arial`;
+    ctx.fillText(`[${this.damage}]`, board.x + board.width - 5, board.y + 25);
+
+  }
+
+  press(key) {
+    if (key == "tab") {
+      this.showStats = true;
+      this.showLifes = true;
+      this.showXp = true;
+    }
+  }
+
+  release(key) {
+    if (key == "tab") {
+      this.showStats = false;
+      this.showLifes = false;
+      this.showXp = false;
     }
   }
 
@@ -206,12 +308,12 @@ class Block {
 }
 
 class Bullet {
-  constructor(cannon, _damage) {
+  constructor(cannon, _damage, _speed) {
     this.x = cannon.x;
     this.y = cannon.y;
     this.width = cannon.width;
     this.height = cannon.height;
-    this.speed = 6;
+    this.speed = _speed;
     this.damage = _damage;
   }
 
@@ -237,7 +339,7 @@ let menu;
 let mouse;
 let player;
 let bullets;
-let blocs;
+let blocks;
 let gameOver;
 
 function newGame() {
@@ -245,15 +347,19 @@ function newGame() {
   mouse = { x: cw / 2, y: ch / 2 };
   player = new Player();
   bullets = [];
-  blocs = [new Block()];
+  blocks = [];
   gameOver = false;
 }
 
 function update() {
   player.update();
 
-  for (let i = blocs.length - 1; i >= 0; i--) {
-    const b = blocs[i];
+  while (blocks.length < player.level) {
+    blocks.push(new Block())
+  }
+
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const b = blocks[i];
 
     b.update();
     for (let j = bullets.length - 1; j >= 0; j--) {
@@ -263,11 +369,14 @@ function update() {
         b.hp -= bullet.damage;
 
         if (b.hp <= 0) {
+          // give xp
+          player.gainXp(b);
+
           if (b.size != 0) {
-            blocs.push(new Block(true, { x: b.x, y: b.y }, b.size - 1, Math.floor(b.maxHp / 2)))
-            blocs.push(new Block(true, { x: b.x, y: b.y }, b.size - 1, Math.floor(b.maxHp / 2)))
+            blocks.push(new Block(true, { x: b.x, y: b.y }, b.size - 1, Math.floor(b.maxHp / 2)))
+            blocks.push(new Block(true, { x: b.x, y: b.y }, b.size - 1, Math.floor(b.maxHp / 2)))
           }
-          blocs.splice(i, 1);
+          blocks.splice(i, 1);
         }
 
         bullets.splice(j, 1);
@@ -297,14 +406,17 @@ function draw() {
 
   player.draw();
 
-  for (let i = 0; i < blocs.length; i++) {
-    blocs[i].draw();
+  for (let i = 0; i < blocks.length; i++) {
+    blocks[i].draw();
   }
 
   for (let i = 0; i < bullets.length; i++) {
     bullets[i].draw();
   }
+
+  player.drawPlayerUi();
 }
+
 
 function drawMenu() {
   rect(0, 0, cw, ch, "#cccccc")
@@ -346,6 +458,21 @@ function animate() {
 
   requestAnimationFrame(animate);
 }
+
+window.addEventListener("keydown", event => {
+  const key = event.key.toLocaleLowerCase();
+
+  if (key == "tab") {
+    event.preventDefault();
+  }
+
+  player.press(key);
+})
+
+window.addEventListener("keyup", event => {
+  const key = event.key.toLocaleLowerCase();
+  player.release(key);
+})
 
 window.addEventListener("contextmenu", event => {
   event.preventDefault();
