@@ -11,11 +11,30 @@ class Player {
     this.lifeLosingVulnerability = 200;
     this.invulnerable = false;
 
-    this.damage = 13;
-    this.bulletSpeed = 6;
+    this.upgrades = 0;
+    this.upgradesTicks = true;
+    this.upgradesTicksCd = 30;
+    this.upgradesTimer = this.upgradesTicksCd;
+    this.statsLevel = {
+      bulletDamage: 1,
+      bulletSpeed: 1,
+      reloadSpeed: 1,
+      bodyDamage: 1,
+    }
 
-    this.shootCooldown = 10;
-    this.shootTimer = this.shootCooldown;
+    this.statsConverter = {
+      bulletDamage: [3, 5, 7, 10, 13, 16, 19, 23, 26, 30], 
+      bulletSpeed: [5, 7, 9, 11, 13, 16, 19, 23, 26, 30],
+      reloadSpeed: [22, 19, 16, 13, 11, 9, 7, 6, 5, 4], 
+      bodyDamage: [0, 50, 100, 150, 200, 300, 400, 500, 700, 1000],
+    }
+
+    this.bulletDamage = this.statsConverter["bulletDamage"][this.statsLevel.bulletDamage - 1];
+    this.bulletSpeed = this.statsConverter["bulletSpeed"][this.statsLevel.bulletSpeed - 1];
+    this.reloadSpeed = this.statsConverter["reloadSpeed"][this.statsLevel.reloadSpeed - 1];
+    this.bodyDamage = this.statsConverter["bodyDamage"][this.statsLevel.bodyDamage - 1];
+
+    this.shootTimer = this.reloadSpeed;
 
     this.bulletWidth = this.width / 15;
     this.bulletHeight = this.bulletWidth * 2.5;
@@ -27,7 +46,7 @@ class Player {
     this.xpToNextLevel = this.level * 10;
     this.xp = 0;
     this.showXp = false;
-    this.showStats = true;
+    this.showStats = false;
   }
 
   update() {
@@ -38,14 +57,22 @@ class Player {
 
     this.shootTimer--;
     if (!this.shootTimer) {
-      this.shootTimer = this.shootCooldown;
+      this.shootTimer = this.reloadSpeed;
       this.shoot();
+    }
+
+    if (this.showStats && this.upgrades) {
+      this.upgradesTimer--;
+      if (!this.upgradesTimer) {
+        this.upgradesTimer = this.upgradesTicksCd;
+        this.upgradesTicks = !this.upgradesTicks;
+      }
     }
   }
 
   shoot() {
-    bullets.push(new Bullet(this.leftFirstCannon, this.damage, this.bulletSpeed));
-    bullets.push(new Bullet(this.rightFirstCannon, this.damage, this.bulletSpeed));
+    bullets.push(new Bullet(this.leftFirstCannon, this.bulletDamage, this.bulletSpeed));
+    bullets.push(new Bullet(this.rightFirstCannon, this.bulletDamage, this.bulletSpeed));
   }
 
   draw() {
@@ -97,6 +124,7 @@ class Player {
     this.xp = 0;
     this.xpToNextLevel += 10;
     this.level++;
+    this.upgrades++; 
     this.showStats = true;
   }
 
@@ -145,10 +173,10 @@ class Player {
 
   drawStats() {
     const board = {
-      width: cw / 11,
-      height: ch / 8,
-      x: cw - 10 - cw / 11,
-      y: ch - 10 - ch / 8,
+      width: cw / 10,
+      height: ch / 3,
+      x: cw - 10 - cw / 10,
+      y: ch - 10 - ch / 3,
     }
 
     ctx.strokeStyle = "#333333";
@@ -167,9 +195,20 @@ class Player {
     ctx.fillText(`Body Damage`, board.x + board.width / 2, board.y + board.height - 30);
 
     ctx.textAlign = "right";
-    ctx.font = `${board.width / 18}px Arial`;
-    ctx.fillText(`[${this.damage}]`, board.x + board.width - 5, board.y + 25);
+    ctx.font = `${board.width / 14}px Arial`;
+    ctx.fillText(`[${this.statsLevel.bulletDamage}]`, board.x + board.width - 5, board.y + 30);
+    ctx.fillText(`[${this.statsLevel.bulletSpeed}]`, board.x + board.width - 5, board.y + (board.height - 60) / 3 + 30);
+    ctx.fillText(`[${this.statsLevel.reloadSpeed}]`, board.x + board.width - 5, board.y + (board.height - 60) * 2 / 3 + 30);
+    ctx.fillText(`[${this.statsLevel.bodyDamage}]`, board.x + board.width - 5, board.y + board.height - 30);
 
+    ctx.textAlign = "left";
+    ctx.font = `${board.width / 12}px Arial`;
+    if (this.upgrades && this.upgradesTicks) {
+      ctx.fillText(`[+]`, board.x + 5, board.y + 30);
+      ctx.fillText(`[+]`, board.x + 5, board.y + (board.height - 60) / 3 + 30);
+      ctx.fillText(`[+]`, board.x + 5, board.y + (board.height - 60) * 2 / 3 + 30);
+      ctx.fillText(`[+]`, board.x + 5, board.y + board.height - 30);
+    }
   }
 
   press(key) {
@@ -177,8 +216,23 @@ class Player {
       this.showStats = true;
       this.showLifes = true;
       this.showXp = true;
+    } else if (this.showStats && this.upgrades) {
+      const statsMap = {
+        "1": "bulletDamage",
+        "2": "bulletSpeed",
+        "3": "reloadSpeed",
+        "4": "bodyDamage",
+      };
+      const statKey = statsMap[key];
+
+      if (statKey && this.statsLevel[statKey] < this.statsConverter[statKey].length) {
+        this.statsLevel[statKey]++;
+        this.upgrades--;
+        this[statKey] = this.statsConverter[statKey][this.statsLevel[statKey] - 1];
+      }
     }
   }
+
 
   release(key) {
     if (key == "tab") {
@@ -267,12 +321,27 @@ class Block {
 
       if (this.inside) {
         if (this.x - this.radius < 0) this.velx = -this.velx;
-        else if (this.x + this.radius > cw) this.velx = -this.velx;
-        else if (this.y - this.radius < 0) this.vely = -this.vely;
-        else if (this.y + this.radius > ch) this.vely = -this.vely;
+          else if (this.x + this.radius > cw) this.velx = -this.velx;
+            else if (this.y - this.radius < 0) this.vely = -this.vely;
+              else if (this.y + this.radius > ch) this.vely = -this.vely;
       }
 
       this.inside = this.x - this.radius > 0 && this.x + this.radius < cw && this.y - this.radius > 0 && this.y + this.radius < ch;
+    }
+  }
+
+  takeDamage(damage, i) {
+    this.hp -= damage;
+
+    if (this.hp <= 0) {
+      // give xp
+      player.gainXp(this);
+
+      if (this.size != 0) {
+        blocks.push(new Block(true, { x: this.x, y: this.y }, this.size - 1, Math.floor(this.maxHp / 2)))
+        blocks.push(new Block(true, { x: this.x, y: this.y }, this.size - 1, Math.floor(this.maxHp / 2)))
+      }
+      blocks.splice(i, 1);
     }
   }
 
@@ -366,19 +435,7 @@ function update() {
       const bullet = bullets[j]
 
       if (b.collide(bullet)) {
-        b.hp -= bullet.damage;
-
-        if (b.hp <= 0) {
-          // give xp
-          player.gainXp(b);
-
-          if (b.size != 0) {
-            blocks.push(new Block(true, { x: b.x, y: b.y }, b.size - 1, Math.floor(b.maxHp / 2)))
-            blocks.push(new Block(true, { x: b.x, y: b.y }, b.size - 1, Math.floor(b.maxHp / 2)))
-          }
-          blocks.splice(i, 1);
-        }
-
+        b.takeDamage(bullet.damage, i);
         bullets.splice(j, 1);
       }
 
@@ -386,6 +443,9 @@ function update() {
 
     const pB = player.getBounds();
     if (b.collide(pB[0]) || b.collide(pB[1]) || b.collide(pB[2]) || b.collide(pB[3])) {
+      if (!player.invulnerable) {
+        b.takeDamage(player.bodyDamage, i);
+      }
       player.looseLife();
     }
   }

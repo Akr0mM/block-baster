@@ -1,16 +1,23 @@
+bugs:
+  -destroying block:
+    -spawn 3 blocks
+    -destroy 2 blocks when destroying 1 (maybe all blocks)
+  -blocks just dont collide and go off even when this.inside is true
+
 make level system:
   ### -ball max appear with level small and big count the same so big can explose and go more than max and if kill small just appear new
   - faire des murs hors border pour kill des block qui serait sorti sans faire expres
-  -block kill give xp : more xp on block size or on block hp 
+  ###-block kill give xp : more xp on block size or on block hp 
   -ball max hp scale with level
   -maybe ball speed ?
   -make player progression with level:
-    -ui with level and point ui to make
-    -ui showLife when key pressed 
+    ###-ui with level and point ui to make
+    ###-ui showLife when key pressed 
     -take point to gain:
-      -bullet damage
-      -bullet speed 
-      -bullet reload
+      ###-bullet damage
+      ###-bullet speed 
+      ###-bullet reload
+      ###-body damage
     -every 5 level gain big point:
       -other cannon
       -other direction cannon
@@ -22,6 +29,7 @@ make level system:
 make better interface:
   -show danger on bloc spawn corner
   -prettier bullet
+  -bullet collision enter block cause check collision after updating x
   -prettier bloc:
     -cercle in shape octogon 
     -rotate 
